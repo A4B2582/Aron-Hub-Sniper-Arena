@@ -1,4 +1,4 @@
-main.lua-- Rayfield UI Yükleme (Delta Mobil Uyumlu)
+-- Rayfield UI Yükleme (Delta Mobil Uyumlu)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Script her açıldığında tüm özellikleri ve kalıntıları kesin olarak sıfırla/kapat
