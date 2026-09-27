@@ -1,0 +1,306 @@
+-- Rayfield UI Yükleme (Delta Mobil Uyumlu)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Script her açıldığında tüm özellikleri ve kalıntıları kesin olarak sıfırla/kapat
+_G.MainEspEnabled = false
+_G.AimbotEnabled = false
+
+-- Üst Düzey Güvenlik Kalkanı (Kick / Hata Önleyici)
+pcall(function()
+   local mt = getrawmetatable(game)
+   setreadonly(mt, false)
+   local old = mt.__namecall
+   mt.__namecall = newcclosure(function(self, ...)
+      local method = getnamecallmethod()
+      if tostring(method) == "Kick" or tostring(method) == "kick" then
+         return 
+      end
+      return old(self, ...)
+   end)
+   setreadonly(mt, true)
+end)
+
+-- Ana Pencere
+local Window = Rayfield:CreateWindow({
+   Name = "Aron Hub / Sniper Arena",
+   LoadingTitle = "Loading for Delta...",
+   LoadingSubtitle = "By Player",
+   ConfigurationSaving = {
+      Enabled = false,
+      FolderName = "SniperArenaHub",
+      FileName = "Config"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "noinv",
+      RememberJoins = true
+   },
+   KeySystem = false,
+   KeySettings = {
+      Title = "Key System",
+      Subtitle = "Discord Address",
+      Note = "Get the key",
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"1234"}
+   }
+})
+
+-- Sekmeler
+local InfoTab = Window:CreateTab("Information", 4483362458)
+local MainTab = Window:CreateTab("Main Menu", 4483362458)
+local KarakterTab = Window:CreateTab("Character", 4483362458)
+
+---------------------------------------------------
+-- BİLGİLENDİRME SEKMESİ (Information)
+---------------------------------------------------
+InfoTab:CreateSection("Info")
+InfoTab:CreateParagraph({Title = "Developer", Content = "qmiracxws"})
+InfoTab:CreateParagraph({Title = "Creation Date & Year", Content = "September 27, 2026"})
+InfoTab:CreateParagraph({Title = "Hub Version", Content = "5.7 (Optimized)"})
+InfoTab:CreateParagraph({Title = "Supported Games", Content = "Sniper Arena"})
+InfoTab:CreateParagraph({Title = "Announcement", Content = "Performance optimized for mobile devices!"})
+
+---------------------------------------------------
+-- ANA MENÜ SEKMESİ (Main Menu)
+---------------------------------------------------
+MainTab:CreateSection("Main Menu")
+
+MainTab:CreateToggle({
+   Name = "Optimized ESP (Players, Bots & Red Wallhack)",
+   CurrentValue = false,
+   Flag = "MainEspToggle",
+   Callback = function(Value)
+      _G.MainEspEnabled = Value
+      
+      local Players = game:GetService("Players")
+      local LocalPlayer = Players.LocalPlayer
+      local espCache = {}
+
+      local function removeEsp(target)
+         if espCache[target] then
+            if espCache[target].billboard then espCache[target].billboard:Destroy() end
+            if espCache[target].highlight then espCache[target].highlight:Destroy() end
+            if target and target:IsA("Model") then
+               for _, obj in pairs(target:GetDescendants()) do
+                  if obj:IsA("BasePart") or obj:IsA("MeshPart") then
+                     if espCache[target][obj] then
+                        obj.Color = espCache[target][obj]
+                     end
+                     obj.Material = Enum.Material.Plastic
+                  end
+               end
+            end
+            espCache[target] = nil
+         end
+      end
+
+      Players.PlayerRemoving:Connect(function(player)
+         removeEsp(player.Character)
+      end)
+
+      if Value then
+         task.spawn(function()
+            while _G.MainEspEnabled do
+               pcall(function()
+                  local targets = {}
+
+                  -- Gerçek oyuncuları ekle
+                  for _, player in pairs(Players:GetPlayers()) do
+                     if player ~= LocalPlayer and player.Character then
+                        table.insert(targets, player.Character)
+                     end
+                  end
+
+                  -- Haritadaki botları / NPC'leri tespit et (Performans için optimize tarama)
+                  for _, obj in pairs(workspace:GetChildren()) do
+                     if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and obj:FindFirstChild("Head") and obj ~= LocalPlayer.Character then
+                        local isPlayer = false
+                        for _, p in pairs(Players:GetPlayers()) do
+                           if p.Character == obj then
+                              isPlayer = true
+                              break
+                           end
+                        end
+                        if not isPlayer then
+                           table.insert(targets, obj)
+                        end
+                     end
+                  end
+
+                  -- Hepsine ESP uygula
+                  for _, char in pairs(targets) do
+                     local head = char:FindFirstChild("Head")
+                     local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+                     if head and humanoid and humanoid.Health > 0 then
+                        if not espCache[char] then
+                           espCache[char] = {}
+                        end
+
+                        local highlight = espCache[char].highlight
+                        if not highlight or highlight.Parent ~= char then
+                           if highlight then highlight:Destroy() end
+                           highlight = Instance.new("Highlight")
+                           highlight.Name = "HubHighlight"
+                           highlight.Adornee = char
+                           highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                           highlight.FillTransparency = 0.3
+                           highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                           highlight.OutlineTransparency = 0
+                           highlight.Parent = char
+                           espCache[char].highlight = highlight
+                        end
+
+                        for _, obj in pairs(char:GetDescendants()) do
+                           if (obj:IsA("BasePart") or obj:IsA("MeshPart")) and obj.Name ~= "HumanoidRootPart" then
+                              if not espCache[char][obj] then
+                                 espCache[char][obj] = obj.Color
+                              end
+                              obj.Color = Color3.fromRGB(255, 0, 0)
+                              obj.Material = Enum.Material.Neon
+                           end
+                        end
+
+                        local billboard = espCache[char].billboard
+                        local textLabel = espCache[char].textLabel
+                        if not billboard or billboard.Parent ~= head then
+                           if billboard then billboard:Destroy() end
+                           
+                           billboard = Instance.new("BillboardGui")
+                           billboard.Name = "HubEspTag"
+                           billboard.Size = UDim2.new(0, 200, 0, 50)
+                           billboard.StudsOffset = Vector3.new(0, 3, 0)
+                           billboard.AlwaysOnTop = true
+                           billboard.Parent = head
+
+                           textLabel = Instance.new("TextLabel")
+                           textLabel.Name = "InfoText"
+                           textLabel.Size = UDim2.new(1, 0, 1, 0)
+                           textLabel.BackgroundTransparency = 1
+                           textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                           textLabel.TextStrokeTransparency = 0
+                           textLabel.TextSize = 14
+                           textLabel.Font = Enum.Font.SourceSansBold
+                           textLabel.Parent = billboard
+
+                           espCache[char].billboard = billboard
+                           espCache[char].textLabel = textLabel
+                        end
+
+                        if textLabel then
+                           local health = math.floor(humanoid.Health)
+                           local maxHealth = math.floor(humanoid.MaxHealth)
+                           local distance = 0
+                           if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("HumanoidRootPart") then
+                              distance = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude)
+                           end
+                           
+                           local displayName = char.Name
+                           for _, p in pairs(Players:GetPlayers()) do
+                              if p.Character == char then
+                                 displayName = p.Name
+                                 break
+                              end
+                           end
+                           
+                           textLabel.Text = (displayName .. " | HP: " .. health .. "/" .. maxHealth .. " | " .. distance .. "m")
+                        end
+                     else
+                        removeEsp(char)
+                     end
+                  end
+               end)
+               task.wait(0.2) -- Kasma sorununu çözmek için tarama aralığı optimize edildi
+            end
+
+            for char, _ in pairs(espCache) do
+               removeEsp(char)
+            end
+         end)
+      end
+   end,
+})
+
+MainTab:CreateToggle({
+   Name = "Optimized Aimbot (Players, Bots & Instant Head Lock)",
+   CurrentValue = false,
+   Flag = "AimbotToggle",
+   Callback = function(Value)
+      _G.AimbotEnabled = Value
+      
+      local Players = game:GetService("Players")
+      local RunService = game:GetService("RunService")
+      local LocalPlayer = Players.LocalPlayer
+      local Camera = workspace.CurrentCamera
+
+      local function getClosestTarget()
+         local closestTarget = nil
+         local shortestDistance = math.huge
+         local mouseLocation = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+         local allTargets = {}
+         
+         for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+               table.insert(allTargets, player.Character)
+            end
+         end
+         
+         for _, obj in pairs(workspace:GetChildren()) do
+            if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and obj:FindFirstChild("Head") and obj ~= LocalPlayer.Character then
+               table.insert(allTargets, obj)
+            end
+         end
+
+         for _, char in pairs(allTargets) do
+            local head = char:FindFirstChild("Head")
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+            if head and humanoid and humanoid.Health > 0 then
+               local screenPoint, onScreen = Camera:WorldToViewportPoint(head.Position)
+               
+               if onScreen then
+                  local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - mouseLocation).Magnitude
+                  if distance < shortestDistance then
+                     shortestDistance = distance
+                     closestTarget = char
+                  end
+               end
+            end
+         end
+         return closestTarget
+      end
+
+      RunService.RenderStepped:Connect(function()
+         if _G.AimbotEnabled then
+            pcall(function()
+               local target = getClosestTarget()
+               if target and target:FindFirstChild("Head") then
+                  local head = target.Head
+                  Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
+               end
+            end)
+         end
+      end)
+   end,
+})
+
+---------------------------------------------------
+-- KARAKTER SEKMESİ (Character)
+---------------------------------------------------
+KarakterTab:CreateSection("Character Settings")
+
+KarakterTab:CreateSlider({
+   Name = "WalkSpeed",
+   Range = {16, 100},
+   Increment = 1,
+   CurrentValue = 16,
+   Flag = "SpeedSlider",
+   Callback = function(Value)
+      pcall(function()
+         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+      end)
+   end,
+})
