@@ -22,7 +22,7 @@ end)
 
 -- Ana Pencere
 local Window = Rayfield:CreateWindow({
-   Name = "Aron Hub / Sniper Arena",
+   Name = "Aselsan Hub / Sniper Arena",
    LoadingTitle = "Loading for Delta...",
    LoadingSubtitle = "By Player",
    ConfigurationSaving = {
